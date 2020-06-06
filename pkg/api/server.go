@@ -128,6 +128,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
+	s.router.HandleFunc("/v1/signup", s.SignUpHandler).Methods("POST")
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
