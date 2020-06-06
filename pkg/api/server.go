@@ -58,6 +58,8 @@ import (
 	_ "github.com/LensPlatform/BlackSpace/pkg/api/docs"
 	"github.com/LensPlatform/BlackSpace/pkg/database"
 	"github.com/LensPlatform/BlackSpace/pkg/fscache"
+	"github.com/LensPlatform/BlackSpace/pkg/helper/utils"
+	mw "github.com/LensPlatform/BlackSpace/pkg/helper/middleware"
 	"github.com/LensPlatform/BlackSpace/pkg/models"
 )
 
@@ -111,6 +113,7 @@ func NewServer(config *Config, logger *zap.Logger, db *database.Db) (*Server, er
 }
 
 func (s *Server) registerHandlers() {
+	authMw := mw.NewJwtMiddleware(s.config.JWTSigningAuthority, s.config.JWTSecret)
 	s.router.Handle("/metrics", promhttp.Handler())
 	s.router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	s.router.HandleFunc("/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
@@ -128,7 +131,14 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
-	s.router.HandleFunc("/v1/signup", s.SignUpHandler).Methods("POST")
+	s.router.HandleFunc("/v1/user/signup", s.SignUpHandler).Methods("POST") // sign up a user
+	s.router.HandleFunc("/v1/user/login", s.loginUserHandler).Methods("POST") // logs in a user into the system
+
+	s.router.HandleFunc("/v1/user/logout", authMw.Handler(s.logoutHandler)).Methods("DELETE") // log user out of system
+	s.router.HandleFunc("/v1/user/{id:[0-9]+}", authMw.Handler(s.updatedUserAccountHandler)).Methods("PUT") // updates a user account
+	s.router.HandleFunc("/v1/user/{id:[0-9]+}", authMw.Handler(s.getUserAccountHandler)).Methods("GET") // get user account by id
+	s.router.HandleFunc("/v1/user/{id:[0-9]+}", authMw.Handler(s.deleteUserAccountHandler)).Methods("DELETE") // deletes a user account by id
+
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
@@ -254,11 +264,11 @@ func (s *Server) printRoutes() {
 	})
 }
 
-func (s *Server) ExtractJwtFromHeader(r *http.Request) (*TokenValidationResponse, error) {
+func (s *Server) ExtractJwtFromHeader(r *http.Request) (*utils.TokenValidationResponse, error) {
 	reqToken := r.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer")
 	// extract the id from the token
-	claims := jwtCustomClaims{}
+	claims := utils.JwtCustomClaims{ }
 	token, err := jwt.ParseWithClaims(splitToken[1], &claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid signing method")
@@ -273,7 +283,7 @@ func (s *Server) ExtractJwtFromHeader(r *http.Request) (*TokenValidationResponse
 		if claims.StandardClaims.Issuer != s.config.JWTSigningAuthority {
 			return nil, errors.New("invalid token")
 		} else {
-			return &TokenValidationResponse{
+			return &utils.TokenValidationResponse{
 				User: claims.User,
 				Id: claims.Id,
 				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
@@ -288,7 +298,7 @@ func (s *Server) GenerateAndSignJwtToken(userID uint32, user *models.UserORM) (s
 	id := int(userID)
 	idStr := strconv.Itoa(id)
 	// sign jwt token
-	claims := &jwtCustomClaims{
+	claims := &utils.JwtCustomClaims{
 		idStr,
 		*user,
 		jwt.StandardClaims{
@@ -304,15 +314,3 @@ func (s *Server) GenerateAndSignJwtToken(userID uint32, user *models.UserORM) (s
 
 type ArrayResponse []string
 type MapResponse map[string]string
-
-type jwtCustomClaims struct {
-	Id string `json:"id"`
-	User models.UserORM `json:"user"`
-	jwt.StandardClaims
-}
-
-type TokenValidationResponse struct {
-	Id string    `json:"id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	User models.UserORM `json:"user"`
-}

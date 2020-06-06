@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"gitlab.com/yoanyombapro/CubeMicroservices/podinfo/pkg/utils/requestutils"
 
 	"github.com/LensPlatform/BlackSpace/pkg/helper"
 	"github.com/LensPlatform/BlackSpace/pkg/models"
@@ -54,14 +53,15 @@ type signUpResponse struct {
 type genericErrorResponseSwagger struct {
 	// in: body
 	Body struct {
+		// error
 		// required: true
 		Error error `json:"error"`
 	}
 }
 
-// swagger:route POST /v1/user User signUpUserReq
+// swagger:route POST /v1/user/signup User signUpUserReq
 //
-// Create User Account
+// Sign Up User
 //
 // creates a user account object in the backend database
 //
@@ -105,7 +105,7 @@ func (s *Server) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	err:= helper.DecodeJSONBody(w, r, &signUpUserRequest)
 	if err != nil {
-		requestutils.ProcessMalformedRequest(w, err)
+		helper.ProcessMalformedRequest(w, err)
 		return
 	}
 

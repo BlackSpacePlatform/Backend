@@ -201,7 +201,7 @@ func (db *Db) GetUserIfExists(ctx context.Context, userID uint32, username, emai
 }
 
 // GetUser queries the database and obtains a user record by id
-func (db *Db) GetUser(ctx context.Context, userID uint32) (*models.User, error) {
+func (db *Db) GetUser(ctx context.Context, userID uint32) (*models.UserORM, error) {
 	var userOrm models.UserORM
 
 	if userID == 0 {
@@ -214,23 +214,10 @@ func (db *Db) GetUser(ctx context.Context, userID uint32) (*models.User, error) 
 		return nil, errors.New("user does not exist")
 	}
 
-	// convert the obtained user ORM object to a user object and validate all fields are there
-	userObj, err := userOrm.ToPB(ctx)
-	if err != nil {
-		db.Logger.Error("failed to convert fields to protobuf format")
-		return nil, err
-	}
-
-	// perform field validation
-	if err = userObj.Validate(); err != nil {
-		db.Logger.Error("field validation failed")
-		return nil, err
-	}
-
 	db.Logger.Info("user successfully obtained user by id",
 		zap.String("id", string(userOrm.Id)),
 		zap.String("username", userOrm.Username),
 		zap.String("email", userOrm.Email))
 
-	return &userObj, nil
+	return &userOrm, nil
 }

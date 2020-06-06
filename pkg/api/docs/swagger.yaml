@@ -162,6 +162,38 @@ definitions:
         x-go-name: Username
     type: object
     x-go-package: github.com/LensPlatform/BlackSpace/pkg/models
+  UserORM:
+    properties:
+      BirthDate:
+        type: string
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        format: date-time
+        type: string
+      Email:
+        type: string
+      FirstName:
+        type: string
+      Id:
+        format: uint32
+        type: integer
+      IsActive:
+        type: boolean
+      IsOnline:
+        type: boolean
+      LastName:
+        type: string
+      Password:
+        type: string
+      UpdatedAt:
+        format: date-time
+        type: string
+      Username:
+        type: string
+    type: object
+    x-go-package: github.com/LensPlatform/BlackSpace/pkg/models
 host: localhost
 info:
   contact:
@@ -178,7 +210,168 @@ info:
   title: Backend API.
   version: 1.0.0
 paths:
-  /v1/user:
+  /v1/user/{id}:
+    delete:
+      consumes:
+      - application/json
+      - application/x-protobuf
+      description: Updates a user account present in the backend database
+      operationId: deleteUser
+      parameters:
+      - description: id of the user account to delete
+        format: uint32
+        in: query
+        name: result
+        required: true
+        type: integer
+        x-go-name: Id
+      produces:
+      - application/json
+      - application/x-protobuf
+      responses:
+        "200":
+          $ref: '#/responses/operationResponse'
+      schemes:
+      - http
+      - https
+      - ws
+      - wss
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+      summary: Delete User Account
+      tags:
+      - User
+    get:
+      consumes:
+      - application/json
+      - application/x-protobuf
+      description: Returns a user account by id
+      operationId: getUserRequest
+      parameters:
+      - description: user account to create
+        in: body
+        name: Body
+        schema:
+          properties:
+            result:
+              description: |-
+                id of the user account to get
+                in: query
+              format: uint32
+              type: integer
+              x-go-name: Id
+          required:
+          - result
+          type: object
+      produces:
+      - application/json
+      - application/x-protobuf
+      responses:
+        "200":
+          $ref: '#/responses/getUserResponse'
+      schemes:
+      - http
+      - https
+      - ws
+      - wss
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+      summary: Get User Account By ID
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      - application/x-protobuf
+      description: Updates a user account present in the backend database
+      operationId: updateSwaggerUser
+      parameters:
+      - description: user account to create
+        in: body
+        name: Body
+        schema:
+          properties:
+            result:
+              $ref: '#/definitions/User'
+          required:
+          - result
+          type: object
+      - description: user id of account to update
+        format: uint32
+        in: query
+        name: UserAccountId
+        type: integer
+      produces:
+      - application/json
+      - application/x-protobuf
+      responses:
+        "200":
+          $ref: '#/responses/operationResponse'
+      schemes:
+      - http
+      - https
+      - ws
+      - wss
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+      summary: Update User Account
+      tags:
+      - User
+  /v1/user/login:
+    post:
+      consumes:
+      - application/json
+      - application/x-protobuf
+      description: Logs in a user into the system
+      operationId: loginUserRequest
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          properties:
+            password:
+              description: password
+              example: test-password
+              type: string
+              x-go-name: Password
+            username:
+              description: user name
+              example: test-username
+              type: string
+              x-go-name: Username
+          required:
+          - username
+          - password
+          type: object
+      produces:
+      - application/json
+      - application/x-protobuf
+      responses:
+        "200":
+          $ref: '#/responses/loginUserResponse'
+      schemes:
+      - http
+      - https
+      - ws
+      - wss
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+      summary: Log in user
+      tags:
+      - User
+  /v1/user/signup:
     post:
       consumes:
       - application/json
@@ -223,7 +416,7 @@ paths:
       - oauth:
         - read
         - write
-      summary: Create User Account
+      summary: Sign Up User
       tags:
       - User
 produces:
@@ -234,6 +427,51 @@ responses:
     schema:
       properties:
         error:
+          description: error
+          type: string
+          x-go-name: Error
+      required:
+      - error
+      type: object
+  getUserResponse:
+    description: Common operation response
+    schema:
+      properties:
+        error:
+          description: error
+          example: error occured while processing request
+          type: string
+          x-go-name: Error
+        user:
+          $ref: '#/definitions/UserORM'
+      required:
+      - error
+      - user
+      type: object
+  loginUserResponse:
+    schema:
+      properties:
+        error:
+          description: error
+          example: unable to get token
+          type: string
+          x-go-name: Error
+        token:
+          description: Jwt Token
+          example: kBxbjzKVDjvasgvds.askdhjaskjdgsagjcdgc.asjdjkasfgdas
+          type: string
+          x-go-name: JwtToken
+      required:
+      - token
+      - error
+      type: object
+  operationResponse:
+    description: Common operation response
+    schema:
+      properties:
+        error:
+          description: error
+          example: error occured while processing request
           type: string
           x-go-name: Error
       required:
