@@ -11,11 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	_ "github.com/LensPlatform/BlackSpace/pkg/api/docs"
+	"github.com/LensPlatform/BlackSpace/pkg/fscache"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
-	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
-	"github.com/stefanprodan/podinfo/pkg/fscache"
 	"github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 )
@@ -25,10 +25,10 @@ import (
 // @description Go microservice template for Kubernetes.
 
 // @contact.name Source Code
-// @contact.url https://github.com/stefanprodan/podinfo
+// @contact.url https://github.com/LensPlatform/BlackSpace
 
 // @license.name MIT License
-// @license.url https://github.com/stefanprodan/podinfo/blob/master/LICENSE
+// @license.url https://github.com/LensPlatform/BlackSpace/blob/master/LICENSE
 
 // @host localhost:9898
 // @BasePath /

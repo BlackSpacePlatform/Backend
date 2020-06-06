@@ -1,12 +1,12 @@
 # podinfo
 
 [![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
-[![Go Report Card](https://goreportcard.com/badge/github.com/stefanprodan/podinfo)](https://goreportcard.com/report/github.com/stefanprodan/podinfo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/LensPlatform/BlackSpace)](https://goreportcard.com/report/github.com/LensPlatform/BlackSpace)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
-Podinfo is a tiny web application made with Go that showcases best practices of running microservices in Kubernetes.
+BlackSpace is a platform providing black entrepreneurs with economic independence
 
-Specifications:
+Specifications: 
 
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
@@ -44,6 +44,9 @@ Web API:
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 * `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
+* `POST /login` returns a JWT token valid for 24 hours if the user of interest exists in our backend database
+* `POST /logout` logs out an existing user from our backend systems
+* `POST /signup` attempts to a signup a user into BlackSpace
 
 gRPC API:
 
@@ -86,7 +89,7 @@ sp/podinfo
 Kustomize:
 
 ```bash
-kubectl apply -k github.com/stefanprodan/podinfo//kustomize
+kubectl apply -k github.com/LensPlatform/BlackSpace//kustomize
 ```
 
 Docker:

@@ -65,7 +65,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 	tmpPath := "/tmp/k8s-podinfo"
 	versionName := fmt.Sprintf("k8s-podinfo-%s", codeVersion)
 
-	downloadURL := fmt.Sprintf("https://github.com/stefanprodan/podinfo/archive/%s.zip", codeVersion)
+	downloadURL := fmt.Sprintf("https://github.com/LensPlatform/BlackSpace/archive/%s.zip", codeVersion)
 	client := &getter.Client{
 		Src:  downloadURL,
 		Dst:  tmpPath,
@@ -80,7 +80,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	pkgFrom := "github.com/stefanprodan/podinfo"
+	pkgFrom := "github.com/LensPlatform/BlackSpace"
 	pkgTo := fmt.Sprintf("github.com/%s/%s", codeGitUser, codeProjectName)
 
 	if err := replaceImports(tmpPath, pkgFrom, pkgTo); err != nil {

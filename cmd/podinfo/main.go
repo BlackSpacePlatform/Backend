@@ -14,10 +14,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/stefanprodan/podinfo/pkg/api"
-	"github.com/stefanprodan/podinfo/pkg/grpc"
-	"github.com/stefanprodan/podinfo/pkg/signals"
-	"github.com/stefanprodan/podinfo/pkg/version"
+	"github.com/LensPlatform/BlackSpace/pkg/api"
+	"github.com/LensPlatform/BlackSpace/pkg/grpc"
+	"github.com/LensPlatform/BlackSpace/pkg/signals"
+	"github.com/LensPlatform/BlackSpace/pkg/version"
 )
 
 func main() {

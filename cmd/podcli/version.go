@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/LensPlatform/BlackSpace/pkg/version"
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
 func init() {

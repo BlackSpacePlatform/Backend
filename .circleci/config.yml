@@ -69,7 +69,7 @@ jobs:
           name: Publish charts
           command: |
             if echo "${CIRCLE_TAG}" | grep -Eq "[0-9]+(\.[0-9]+)*(-[a-z]+)?$"; then
-              REPOSITORY="https://stefanprodan:${GITHUB_TOKEN}@github.com/stefanprodan/podinfo.git"
+              REPOSITORY="https://stefanprodan:${GITHUB_TOKEN}@github.com/LensPlatform/BlackSpace.git"
               git config user.email stefanprodan@users.noreply.github.com
               git config user.name stefanprodan
               git remote set-url origin ${REPOSITORY}

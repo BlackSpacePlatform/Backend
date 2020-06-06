@@ -19,8 +19,8 @@ LDFLAGS := -X github.com/kwilczynski/$(NAME)/$(NAME).Revision=$(REV)$(CHANGES)
 GPG_SIGNING_KEY :=
 
 build:
-	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podinfo ./cmd/podinfo/*
-	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
+	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/LensPlatform/BlackSpace/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podinfo ./cmd/podinfo/*
+	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/LensPlatform/BlackSpace/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
 
 # Addional makefile utilities
 
@@ -49,7 +49,8 @@ build:
 	sign-release \
 	check \
 	vendor \
-	version
+	version \
+	proto
 
 all: imports fmt lint vet errors build
 
@@ -83,6 +84,7 @@ help:
 	@echo '    check              Verify compiled binary.'
 	@echo '    vendor             Update and save project build time dependencies.'
 	@echo '    version            Display Go version.'
+	@echo '    proto              Update tables via proto definitions.'
 	@echo ''
 	@echo 'Targets run by default are: imports, fmt, lint, vet, errors and build.'
 	@echo ''
@@ -133,7 +135,7 @@ print-%:
 	@echo $* = $($*)
 
 run:
-	GO111MODULE=on go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* \
+	GO111MODULE=on go run -ldflags "-s -w -X github.com/LensPlatform/BlackSpace/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* \
 	--level=debug --grpc-port=9999 --backend-url=https://httpbin.org/status/401 --backend-url=https://httpbin.org/status/500 \
 	--ui-logo=https://media.giphy.com/media/l0ExbNdlJFGRphMR2/giphy.gif
 
@@ -249,3 +251,16 @@ vendor: deps
 
 version:
 	@go version
+
+proto:
+	@echo "setting up service schema definition via protobuf"
+	protoc -I. \
+			-I$(GOPATH)/src \
+			-I=$(GOPATH)/src/github.com/infobloxopen/protoc-gen-gorm \
+			-I=$(GOPATH)/src/github.com/infobloxopen/atlas-app-toolkit \
+			-I=$(GOPATH)/src/github.com/lyft/protoc-gen-validate/validate/validate.proto \
+			-I=$(GOPATH)/src/github.com/infobloxopen/protoc-gen-gorm/options \
+			-I=$(GOPATH)/src/github.com/protobuf/src/google/protobuf/timestamp.proto \
+			--proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
+            --govalidators_out=./pkg/database/ \
+			--go_out=plugins=grpc:./pkg/database/ --gorm_out="engine=postgres:./pkg/database/" ./proto/models/*.proto
