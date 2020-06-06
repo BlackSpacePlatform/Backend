@@ -1,4 +1,4 @@
-# podinfo
+# BlackSpace
 
 [![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/LensPlatform/BlackSpace)](https://goreportcard.com/report/github.com/LensPlatform/BlackSpace)

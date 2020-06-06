@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "github.com/infobloxopen/protoc-gen-gorm/options/gorm.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/protobuf/src/google/protobuf/timestamp.proto";
+import "models/common.proto";
+
+option go_package = "models";
+
+message User {
+    option (gorm.opts) = {
+        ormable: true,
+    };
+    uint32 id = 1 [(gorm.field).tag = {type: "serial" primary_key: true, auto_increment: true}];
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp deleted_at = 3;
+    google.protobuf.Timestamp updated_at = 4;
+    string firstName = 5;
+    string lastName = 6;
+    Gender gender = 7;
+    string email = 8;
+    string password = 9;
+    string birthDate = 10;
+    bool isActive = 11;
+    bool isOnline = 12;
+    string username = 13;
+}
+

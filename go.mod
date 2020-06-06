@@ -8,7 +8,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/go-chi/chi v4.0.2+incompatible // indirect
+	github.com/go-openapi/runtime v0.19.15
 	github.com/golang/protobuf v1.4.2
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/websocket v1.4.2
@@ -22,12 +22,12 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/stefanprodan/k8s-podinfo v1.8.0 // indirect
-	github.com/stefanprodan/podinfo v1.8.0
-	github.com/swaggo/http-swagger v0.0.0-20190614090009-c2865af9083e
-	github.com/swaggo/swag v1.6.6
+	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
+	github.com/swaggo/swag v1.6.7
 	gitlab.com/yoanyombapro/CubeMicroservices/podinfo v0.0.0-20200606000940-953ae9e43780
 	go.uber.org/zap v1.15.0
-	google.golang.org/genproto v0.0.0-20200603110839-e855014d5736
+	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed
+	google.golang.org/genproto v0.0.0-20200605102947-12044bf5ea91
 	google.golang.org/grpc v1.29.1
 	gopkg.in/gormigrate.v1 v1.6.0
 )

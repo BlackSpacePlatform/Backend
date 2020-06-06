@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/LensPlatform/BlackSpace/pkg/api"
+	"github.com/LensPlatform/BlackSpace/pkg/database"
 	"github.com/LensPlatform/BlackSpace/pkg/grpc"
 	"github.com/LensPlatform/BlackSpace/pkg/signals"
 	"github.com/LensPlatform/BlackSpace/pkg/version"
@@ -23,7 +24,7 @@ import (
 func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
-	fs.Int("port", 9898, "HTTP port")
+	fs.Int("PORT", 9100, "HTTP port")
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
@@ -43,6 +44,8 @@ func main() {
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
 	fs.Int("stress-cpu", 0, "Number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
+	fs.String("DATABASE_CONNECTION_ADDRESS", "postgresql://doadmin:oqshd3sto72yyhgq@test-do-user-6612421-0.a.db.ondigitalocean.com:25060/blackspace?sslmode=require", "database connection address")
+	fs.String("JWT_SIGNER", "blackspace", "JWT signin name")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
@@ -88,13 +91,18 @@ func main() {
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
 
+	dbConnString := viper.GetString("DATABASE_CONNECTION_ADDRESS")
+	// connect to backend database
+	db, err := database.New(dbConnString, logger)
+	defer db.Engine.Close()
+
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
 	// validate port
-	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
-		port, _ := fs.GetInt("port")
-		viper.Set("port", strconv.Itoa(port))
+	if _, err := strconv.Atoi(viper.GetString("PORT")); err != nil {
+		port, _ := fs.GetInt("PORT")
+		viper.Set("PORT", strconv.Itoa(port))
 	}
 
 	// load gRPC server config
@@ -123,7 +131,7 @@ func main() {
 	)
 
 	// start HTTP server
-	srv, _ := api.NewServer(&srvCfg, logger)
+	srv, _ := api.NewServer(&srvCfg, logger, db)
 	stopCh := signals.SetupSignalHandler()
 	srv.ListenAndServe(stopCh)
 }

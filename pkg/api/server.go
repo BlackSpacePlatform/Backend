@@ -1,38 +1,65 @@
+// Package BlackSpace Backend API.
+//
+// This serves as the user's microservice api definition for the CUBE Platform
+//
+// Terms Of Service:
+//
+// there are no TOS at this moment, use at your own risk we take no responsibility
+//
+//     Schemes: http, https
+//     Host: localhost
+//     BasePath: /v1
+//     Version: 1.0.0
+//     License: MIT http://opensource.org/licenses/MIT
+//     Contact: Yoan Yomba<yoanyombapro@gmail.com.com> http://CUBE.com
+//
+//     Consumes:
+//     - application/json
+//
+//     Produces:
+//     - application/json
+//
+//     Security:
+//     - api_key:
+//
+//
+//     Extensions:
+//     x-meta-value: value
+//     x-meta-array:
+//       - value1
+//       - value2
+//     x-meta-array-obj:
+//       - name: obj
+//         value: field
+//
+// swagger:meta
 package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/swaggo/swag"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
 
-	_ "github.com/LensPlatform/BlackSpace/pkg/api/docs"
-	"github.com/LensPlatform/BlackSpace/pkg/fscache"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
+
+	_ "github.com/LensPlatform/BlackSpace/pkg/api/docs"
+	"github.com/LensPlatform/BlackSpace/pkg/database"
+	"github.com/LensPlatform/BlackSpace/pkg/fscache"
+	"github.com/LensPlatform/BlackSpace/pkg/models"
 )
-
-// @title Podinfo API
-// @version 2.0
-// @description Go microservice template for Kubernetes.
-
-// @contact.name Source Code
-// @contact.url https://github.com/LensPlatform/BlackSpace
-
-// @license.name MIT License
-// @license.url https://github.com/LensPlatform/BlackSpace/blob/master/LICENSE
-
-// @host localhost:9898
-// @BasePath /
-// @schemes http https
 
 var (
 	healthy int32
@@ -62,19 +89,22 @@ type Config struct {
 	RandomDelay               bool          `mapstructure:"random-delay"`
 	RandomError               bool          `mapstructure:"random-error"`
 	JWTSecret                 string        `mapstructure:"jwt-secret"`
+	JWTSigningAuthority       string        `mapstructure:"JWT_SIGNER"`
 }
 
 type Server struct {
 	router *mux.Router
 	logger *zap.Logger
 	config *Config
+	db *database.Db
 }
 
-func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
+func NewServer(config *Config, logger *zap.Logger, db *database.Db) (*Server, error) {
 	srv := &Server{
 		router: mux.NewRouter(),
 		logger: logger,
 		config: config,
+		db: db,
 	}
 
 	return srv, nil
@@ -87,38 +117,26 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/version", s.versionHandler).Methods("GET")
 	s.router.HandleFunc("/echo", s.echoHandler).Methods("POST")
-	s.router.HandleFunc("/env", s.envHandler).Methods("GET", "POST")
 	s.router.HandleFunc("/headers", s.echoHeadersHandler).Methods("GET", "POST")
-	s.router.HandleFunc("/delay/{wait:[0-9]+}", s.delayHandler).Methods("GET").Name("delay")
 	s.router.HandleFunc("/healthz", s.healthzHandler).Methods("GET")
 	s.router.HandleFunc("/readyz", s.readyzHandler).Methods("GET")
 	s.router.HandleFunc("/readyz/enable", s.enableReadyHandler).Methods("POST")
 	s.router.HandleFunc("/readyz/disable", s.disableReadyHandler).Methods("POST")
-	s.router.HandleFunc("/panic", s.panicHandler).Methods("GET")
-	s.router.HandleFunc("/status/{code:[0-9]+}", s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
 	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST")
 	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
 	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
-	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
-	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
-	s.router.HandleFunc("/chunked", s.chunkedHandler)
-	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
-	s.router.HandleFunc("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		doc, err := swag.ReadDoc()
-		if err != nil {
-			s.logger.Error("swagger error", zap.Error(err), zap.String("path", "/swagger.json"))
-		}
-		w.Write([]byte(doc))
-	})
+
+	// serve swagger files in a seamless manner
+	ops := middleware.RedocOpts{SpecURL: "/swagger.yaml", Title: "BlackSpace Backend API"}
+	sh := middleware.Redoc(ops, nil)
+	s.router.Handle("/docs", sh)
+	s.router.Handle("/swagger.yaml", http.FileServer(http.Dir("./pkg/api/docs")))
 }
 
 func (s *Server) registerMiddlewares() {
@@ -127,12 +145,6 @@ func (s *Server) registerMiddlewares() {
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
-	if s.config.RandomDelay {
-		s.router.Use(randomDelayMiddleware)
-	}
-	if s.config.RandomError {
-		s.router.Use(randomErrorMiddleware)
-	}
 }
 
 func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
@@ -148,8 +160,6 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
 		Handler:      s.router,
 	}
-
-	//s.printRoutes()
 
 	// load configs in memory and start watching for changes in the config dir
 	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
@@ -243,5 +253,65 @@ func (s *Server) printRoutes() {
 	})
 }
 
+func (s *Server) ExtractJwtFromHeader(r *http.Request) (*TokenValidationResponse, error) {
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+	// extract the id from the token
+	claims := jwtCustomClaims{}
+	token, err := jwt.ParseWithClaims(splitToken[1], &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid signing method")
+		}
+		return []byte(s.config.JWTSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if token.Valid {
+		if claims.StandardClaims.Issuer != s.config.JWTSigningAuthority {
+			return nil, errors.New("invalid token")
+		} else {
+			return &TokenValidationResponse{
+				User: claims.User,
+				Id: claims.Id,
+				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
+			}, nil
+		}
+	}
+
+	return nil, errors.New("invalid authorization token")
+}
+
+func (s *Server) GenerateAndSignJwtToken(userID uint32, user *models.UserORM) (string, error) {
+	id := int(userID)
+	idStr := strconv.Itoa(id)
+	// sign jwt token
+	claims := &jwtCustomClaims{
+		idStr,
+		*user,
+		jwt.StandardClaims{
+			Issuer:    s.config.JWTSigningAuthority,
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	t, err := token.SignedString([]byte(s.config.JWTSecret))
+	return t, err
+}
+
 type ArrayResponse []string
 type MapResponse map[string]string
+
+type jwtCustomClaims struct {
+	Id string `json:"id"`
+	User models.UserORM `json:"user"`
+	jwt.StandardClaims
+}
+
+type TokenValidationResponse struct {
+	Id string    `json:"id"`
+	ExpiresAt time.Time `json:"expires_at"`
+	User models.UserORM `json:"user"`
+}

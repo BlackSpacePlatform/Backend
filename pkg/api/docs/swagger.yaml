@@ -1,362 +1,279 @@
-basePath: /
+basePath: /v1
+consumes:
+- application/json
 definitions:
-  api.ArrayResponse:
-    items: {}
-    type: array
-  api.MapResponse:
-    additionalProperties: {}
-    type: object
-  api.RuntimeResponse:
+  Gender:
     properties:
-      color:
-        type: string
-      goarch:
-        type: string
-      goos:
-        type: string
-      hostname:
-        type: string
-      message:
-        type: string
-      num_cpu:
-        type: string
-      num_goroutine:
-        type: string
-      revision:
-        type: string
-      runtime:
-        type: string
-      version:
-        type: string
+      female:
+        type: boolean
+        x-go-name: Female
+      genderNonBinary:
+        type: boolean
+        x-go-name: GenderNonBinary
+      male:
+        type: boolean
+        x-go-name: Male
+      transgender:
+        type: boolean
+        x-go-name: Transgender
     type: object
-  api.TokenResponse:
+    x-go-package: github.com/LensPlatform/BlackSpace/pkg/models
+  Timestamp:
+    description: |-
+      All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+      second table is needed for interpretation, using a [24-hour linear
+      smear](https://developers.google.com/time/smear).
+
+      The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+      restricting to that range, we ensure that we can convert to and from [RFC
+      3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+
+      # Examples
+
+      Example 1: Compute Timestamp from POSIX `time()`.
+
+      Timestamp timestamp;
+      timestamp.set_seconds(time(NULL));
+      timestamp.set_nanos(0);
+
+      Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+
+      Timestamp timestamp;
+      timestamp.set_seconds(tv.tv_sec);
+      timestamp.set_nanos(tv.tv_usec * 1000);
+
+      Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+
+      FILETIME ft;
+      GetSystemTimeAsFileTime(&ft);
+      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+
+      A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+      is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+      Timestamp timestamp;
+      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+
+      Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+
+      long millis = System.currentTimeMillis();
+
+      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+      .setNanos((int) ((millis % 1000) * 1000000)).build();
+
+
+      Example 5: Compute Timestamp from current time in Python.
+
+      timestamp = Timestamp()
+      timestamp.GetCurrentTime()
+
+      # JSON Mapping
+
+      In JSON format, the Timestamp type is encoded as a string in the
+      [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+      format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+      where {year} is always expressed using four digits while {month}, {day},
+      {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+      seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+      are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+      is required. A proto3 JSON serializer should always use UTC (as indicated by
+      "Z") when printing the Timestamp type and a proto3 JSON parser should be
+      able to accept both UTC and other timezones (as indicated by an offset).
+
+      For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+      01:30 UTC on January 15, 2017.
+
+      In JavaScript, one can convert a Date object to this format using the
+      standard
+      [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+      method. In Python, a standard `datetime.datetime` object can be converted
+      to this format using
+      [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+      the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+      the Joda Time's [`ISODateTimeFormat.dateTime()`](
+      http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D
+      ) to obtain a formatter capable of generating timestamps in this format.
     properties:
-      expires_at:
-        type: string
-      token:
-        type: string
+      nanos:
+        description: |-
+          Non-negative fractions of a second at nanosecond resolution. Negative
+          second values with fractions must still have non-negative nanos values
+          that count forward in time. Must be from 0 to 999,999,999
+          inclusive.
+        format: int32
+        type: integer
+        x-go-name: Nanos
+      seconds:
+        description: |-
+          Represents seconds of UTC time since Unix epoch
+          1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+          9999-12-31T23:59:59Z inclusive.
+        format: int64
+        type: integer
+        x-go-name: Seconds
+    title: |-
+      A Timestamp represents a point in time independent of any time zone or local
+      calendar, encoded as a count of seconds and fractions of seconds at
+      nanosecond resolution. The count is relative to an epoch at UTC midnight on
+      January 1, 1970, in the proleptic Gregorian calendar which extends the
+      Gregorian calendar backwards to year one.
     type: object
-  api.TokenValidationResponse:
+    x-go-package: google.golang.org/protobuf/types/known/timestamppb
+  User:
     properties:
-      expires_at:
+      birthDate:
         type: string
-      token_name:
+        x-go-name: BirthDate
+      created_at:
+        $ref: '#/definitions/Timestamp'
+      deleted_at:
+        $ref: '#/definitions/Timestamp'
+      email:
         type: string
+        x-go-name: Email
+      firstName:
+        type: string
+        x-go-name: FirstName
+      gender:
+        $ref: '#/definitions/Gender'
+      id:
+        format: uint32
+        type: integer
+        x-go-name: Id
+      isActive:
+        type: boolean
+        x-go-name: IsActive
+      isOnline:
+        type: boolean
+        x-go-name: IsOnline
+      lastName:
+        type: string
+        x-go-name: LastName
+      password:
+        type: string
+        x-go-name: Password
+      updated_at:
+        $ref: '#/definitions/Timestamp'
+      username:
+        type: string
+        x-go-name: Username
     type: object
-host: localhost:9898
+    x-go-package: github.com/LensPlatform/BlackSpace/pkg/models
+host: localhost
 info:
   contact:
-    name: Source Code
-    url: https://github.com/LensPlatform/BlackSpace
-  description: Go microservice template for Kubernetes.
+    email: yoanyombapro@gmail.com.com
+    name: Yoan Yomba
+    url: http://CUBE.com
+  description: This serves as the user's microservice api definition for the CUBE
+    Platform
   license:
-    name: MIT License
-    url: https://github.com/LensPlatform/BlackSpace/blob/master/LICENSE
-  title: Podinfo API
-  version: "2.0"
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  termsOfService: there are no TOS at this moment, use at your own risk we take no
+    responsibility
+  title: Backend API.
+  version: 1.0.0
 paths:
-  /:
-    get:
-      description: renders podinfo UI
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Index
-      tags:
-      - HTTP API
-  /api/echo:
+  /v1/user:
     post:
       consumes:
       - application/json
-      description: forwards the call to the backend service and echos the posted content
+      - application/x-protobuf
+      description: creates a user account object in the backend database
+      operationId: signUpUserReq
+      parameters:
+      - in: body
+        name: Body
+        schema:
+          properties:
+            user:
+              $ref: '#/definitions/User'
+          required:
+          - user
+          type: object
       produces:
       - application/json
-      responses:
-        "202":
-          description: Accepted
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Echo
-      tags:
-      - HTTP API
-  /api/info:
-    get:
-      consumes:
-      - application/json
-      description: returns the runtime information
-      produces:
-      - application/json
+      - application/x-protobuf
       responses:
         "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.RuntimeResponse'
-            type: object
-      summary: Runtime information
-      tags:
-      - HTTP API
-  /chunked/{seconds}:
-    get:
-      consumes:
-      - application/json
-      description: uses transfer-encoding type chunked to give a partial response
-        and then waits for the specified period
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Chunked transfer encoding
-      tags:
-      - HTTP API
-  /delay/{seconds}:
-    get:
-      consumes:
-      - application/json
-      description: waits for the specified period
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Delay
-      tags:
-      - HTTP API
-  /env:
-    get:
-      consumes:
-      - application/json
-      description: returns the environment variables as a JSON array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.ArrayResponse'
-            type: object
-      summary: Environment
-      tags:
-      - HTTP API
-  /headers:
-    get:
-      consumes:
-      - application/json
-      description: returns a JSON array with the request HTTP headers
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.ArrayResponse'
-            type: object
-      summary: Headers
-      tags:
-      - HTTP API
-  /healthz:
-    get:
-      consumes:
-      - application/json
-      description: used by Kubernetes liveness probe
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Liveness check
-      tags:
-      - Kubernetes
-  /metrics:
-    get:
-      description: returns HTTP requests duration and Go runtime metrics
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Prometheus metrics
-      tags:
-      - Kubernetes
-  /panic:
-    get:
-      description: crashes the process with exit code 255
-      summary: Panic
-      tags:
-      - HTTP API
-  /readyz:
-    get:
-      consumes:
-      - application/json
-      description: used by Kubernetes readiness probe
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Readiness check
-      tags:
-      - Kubernetes
-  /readyz/disable:
-    post:
-      consumes:
-      - application/json
-      description: signals the Kubernetes LB to stop sending requests to this instance
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: OK
-          schema:
-            type: string
-      summary: Disable ready state
-      tags:
-      - Kubernetes
-  /readyz/enable:
-    post:
-      consumes:
-      - application/json
-      description: signals the Kubernetes LB that this instance is ready to receive
-        traffic
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: OK
-          schema:
-            type: string
-      summary: Enable ready state
-      tags:
-      - Kubernetes
-  /status/{code}:
-    get:
-      consumes:
-      - application/json
-      description: sets the response status code to the specified code
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Status code
-      tags:
-      - HTTP API
-  /store:
-    post:
-      consumes:
-      - application/json
-      description: writes the posted content to disk at /data/hash and returns the
-        SHA1 hash of the content
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Upload file
-      tags:
-      - HTTP API
-  /store/{hash}:
-    get:
-      consumes:
-      - application/json
-      description: returns the content of the file /data/hash if exists
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: file
-          schema:
-            type: string
-      summary: Download file
-      tags:
-      - HTTP API
-  /token:
-    post:
-      consumes:
-      - application/json
-      description: issues a JWT token valid for one minute
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.TokenResponse'
-            type: object
-      summary: Generate JWT token
-      tags:
-      - HTTP API
-  /token/validate:
-    post:
-      consumes:
-      - application/json
-      description: validates the JWT token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.TokenValidationResponse'
-            type: object
+          $ref: '#/responses/signUpResp'
+        "400":
+          $ref: '#/responses/genericError'
         "401":
-          description: Unauthorized
-          schema:
-            type: string
-      summary: Validate JWT token
+          $ref: '#/responses/genericError'
+        "403":
+          $ref: '#/responses/genericError'
+        "404":
+          $ref: '#/responses/genericError'
+        "406":
+          $ref: '#/responses/genericError'
+        "500":
+          $ref: '#/responses/genericError'
+      schemes:
+      - http
+      - https
+      - ws
+      - wss
+      security:
+      - api_key: []
+      - oauth:
+        - read
+        - write
+      summary: Create User Account
       tags:
-      - HTTP API
-  /version:
-    get:
-      description: returns podinfo version and git commit hash
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Version
-      tags:
-      - HTTP API
-  /ws/echo:
-    post:
-      consumes:
-      - application/json
-      description: echos content via websockets
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-            type: object
-      summary: Echo over websockets
-      tags:
-      - HTTP API
+      - User
+produces:
+- application/json
+responses:
+  genericError:
+    description: Error occured during request lifecycle
+    schema:
+      properties:
+        error:
+          type: string
+          x-go-name: Error
+      required:
+      - error
+      type: object
+  signUpResp:
+    description: User Successfully signed up
+    schema:
+      properties:
+        error:
+          description: error
+          example: user already exists
+          type: string
+          x-go-name: Error
+        id:
+          description: user account id
+          example: 20
+          format: uint32
+          type: integer
+          x-go-name: Id
+        jwt:
+          description: JWT Token
+          example: askhdkjashjd.sajkhdjashjfdsa.askjdhjkashdja
+          type: string
+          x-go-name: JwtToken
+      required:
+      - id
+      - error
+      - jwt
+      type: object
+schemes:
+- http
+- https
+security:
+- api_key: []
 swagger: "2.0"
+x-meta-array:
+- value1
+- value2
+x-meta-array-obj:
+- name: obj
+  value: field
+x-meta-value: value

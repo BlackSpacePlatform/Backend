@@ -50,7 +50,8 @@ build:
 	check \
 	vendor \
 	version \
-	proto
+	proto	\
+	swagger
 
 all: imports fmt lint vet errors build
 
@@ -85,6 +86,7 @@ help:
 	@echo '    vendor             Update and save project build time dependencies.'
 	@echo '    version            Display Go version.'
 	@echo '    proto              Update tables via proto definitions.'
+	@echo '    swagger 			  Creates an updated swagger file.'
 	@echo ''
 	@echo 'Targets run by default are: imports, fmt, lint, vet, errors and build.'
 	@echo ''
@@ -262,5 +264,14 @@ proto:
 			-I=$(GOPATH)/src/github.com/infobloxopen/protoc-gen-gorm/options \
 			-I=$(GOPATH)/src/github.com/protobuf/src/google/protobuf/timestamp.proto \
 			--proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
-            --govalidators_out=./pkg/database/ \
-			--go_out=plugins=grpc:./pkg/database/ --gorm_out="engine=postgres:./pkg/database/" ./proto/models/*.proto
+            --govalidators_out=./pkg/ \
+			--go_out=plugins=grpc:./pkg/ --gorm_out="engine=postgres:./pkg/" ./models/*.proto
+
+
+check-install-swagger:
+	@echo "installing required libraries for swagger doc. generation"
+	which swagger || GO111MODULE=off go get -u github.com/go-swagger/go-swagger/cmd/swagger
+
+swagger: check-install-swagger
+	@echo "generating swagger documentation"
+	GO111MODULE=off swagger generate spec -o ./pkg/api/docs/swagger.yaml --scan-models
